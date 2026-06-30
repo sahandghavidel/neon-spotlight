@@ -1,69 +1,69 @@
 (() => {
-  const OVERLAY_CLASS = "ace-neon-element-border";
-  const STYLE_ID = "ace-neon-element-border-styles";
+  const OVERLAY_CLASS = 'ace-neon-element-border';
+  const STYLE_ID = 'ace-neon-element-border-styles';
   const BUTTON_SELECTOR = [
-    "button",
+    'button',
     "input[type='button']",
     "input[type='submit']",
     "input[type='reset']",
-    "[role='button']"
-  ].join(",");
+    "[role='button']",
+  ].join(',');
 
   const DEFAULT_OPTIONS = {
-    modifierKey: "Control",
-    colorTheme: "blue",
-    motionStyle: "trace",
+    modifierKey: 'Control',
+    colorTheme: 'blue',
+    motionStyle: 'trace',
     hoverLoop: true,
     clickEnabled: true,
     intensity: 85,
     contrast: 80,
     thickness: 3,
-    speed: 75
+    speed: 75,
   };
 
   const THEMES = {
     blue: {
-      main: "#42e8ff",
-      bright: "#f2ffff",
-      deep: "#136cff",
-      soft: "rgba(0, 209, 255, 0.32)",
-      glow: "rgba(0, 209, 255, 0.95)"
+      main: '#42e8ff',
+      bright: '#f2ffff',
+      deep: '#136cff',
+      soft: 'rgba(0, 209, 255, 0.32)',
+      glow: 'rgba(0, 209, 255, 0.95)',
     },
     cyan: {
-      main: "#48ffd5",
-      bright: "#ecfff9",
-      deep: "#00a8d8",
-      soft: "rgba(72, 255, 213, 0.28)",
-      glow: "rgba(72, 255, 213, 0.9)"
+      main: '#48ffd5',
+      bright: '#ecfff9',
+      deep: '#00a8d8',
+      soft: 'rgba(72, 255, 213, 0.28)',
+      glow: 'rgba(72, 255, 213, 0.9)',
     },
     violet: {
-      main: "#b68cff",
-      bright: "#fbf6ff",
-      deep: "#6f45ff",
-      soft: "rgba(182, 140, 255, 0.3)",
-      glow: "rgba(182, 140, 255, 0.9)"
+      main: '#b68cff',
+      bright: '#fbf6ff',
+      deep: '#6f45ff',
+      soft: 'rgba(182, 140, 255, 0.3)',
+      glow: 'rgba(182, 140, 255, 0.9)',
     },
     emerald: {
-      main: "#56ff94",
-      bright: "#f1fff6",
-      deep: "#00a66a",
-      soft: "rgba(86, 255, 148, 0.27)",
-      glow: "rgba(86, 255, 148, 0.88)"
+      main: '#56ff94',
+      bright: '#f1fff6',
+      deep: '#00a66a',
+      soft: 'rgba(86, 255, 148, 0.27)',
+      glow: 'rgba(86, 255, 148, 0.88)',
     },
     rose: {
-      main: "#ff6fb1",
-      bright: "#fff4fb",
-      deep: "#ff2f6f",
-      soft: "rgba(255, 111, 177, 0.28)",
-      glow: "rgba(255, 111, 177, 0.9)"
+      main: '#ff6fb1',
+      bright: '#fff4fb',
+      deep: '#ff2f6f',
+      soft: 'rgba(255, 111, 177, 0.28)',
+      glow: 'rgba(255, 111, 177, 0.9)',
     },
     gold: {
-      main: "#ffd45a",
-      bright: "#fffbed",
-      deep: "#ff8d24",
-      soft: "rgba(255, 212, 90, 0.26)",
-      glow: "rgba(255, 212, 90, 0.88)"
-    }
+      main: '#ffd45a',
+      bright: '#fffbed',
+      deep: '#ff8d24',
+      soft: 'rgba(255, 212, 90, 0.26)',
+      glow: 'rgba(255, 212, 90, 0.88)',
+    },
   };
 
   const MIN_SIZE = 8;
@@ -107,29 +107,59 @@
     const saturate = Math.max(0.7, options.contrast / 70);
 
     overlay.dataset.motion = options.motionStyle;
-    overlay.style.setProperty("--ace-main", theme.main);
-    overlay.style.setProperty("--ace-bright", theme.bright);
-    overlay.style.setProperty("--ace-deep", theme.deep);
-    overlay.style.setProperty("--ace-soft", theme.soft);
-    overlay.style.setProperty("--ace-glow", theme.glow);
-    overlay.style.setProperty("--ace-glow-size", `${Math.max(4, options.intensity * 0.32)}px`);
-    overlay.style.setProperty("--ace-main-glow-size", `${Math.max(3, options.intensity * 0.22)}px`);
-    overlay.style.setProperty("--ace-spark-glow-size", `${Math.max(4, options.intensity * 0.26)}px`);
-    overlay.style.setProperty("--ace-aura-opacity", `${Math.min(1, Math.max(0.18, options.intensity / 100))}`);
-    overlay.style.setProperty("--ace-brightness", `${brightness}`);
-    overlay.style.setProperty("--ace-saturate", `${saturate}`);
-    overlay.style.setProperty("--ace-main-stroke", `${options.thickness}`);
-    overlay.style.setProperty("--ace-soft-stroke", `${options.thickness + Math.max(3, options.intensity * 0.055)}`);
-    overlay.style.setProperty("--ace-spark-stroke", `${Math.max(1, options.thickness * 0.52 + options.intensity * 0.008)}`);
-    overlay.style.setProperty("--ace-comet-main-stroke", `${options.thickness * 0.9}`);
-    overlay.style.setProperty("--ace-comet-spark-stroke", `${Math.max(1.2, options.thickness * 0.82)}`);
-    overlay.style.setProperty("--ace-corner-size", `${Math.max(8, options.intensity * 0.16)}px`);
-    overlay.style.setProperty("--ace-draw-duration", `${0.95 * speedFactor}s`);
-    overlay.style.setProperty("--ace-fast-duration", `${0.75 * speedFactor}s`);
-    overlay.style.setProperty("--ace-live-duration", `${1.15 * speedFactor}s`);
-    overlay.style.setProperty("--ace-breathe-duration", `${1.6 * speedFactor}s`);
-    overlay.style.setProperty("--ace-calm-duration", `${2.1 * speedFactor}s`);
-    overlay.style.setProperty("--ace-fade-duration", `${1.5 * speedFactor}s`);
+    overlay.style.setProperty('--ace-main', theme.main);
+    overlay.style.setProperty('--ace-bright', theme.bright);
+    overlay.style.setProperty('--ace-deep', theme.deep);
+    overlay.style.setProperty('--ace-soft', theme.soft);
+    overlay.style.setProperty('--ace-glow', theme.glow);
+    overlay.style.setProperty(
+      '--ace-glow-size',
+      `${Math.max(4, options.intensity * 0.32)}px`,
+    );
+    overlay.style.setProperty(
+      '--ace-main-glow-size',
+      `${Math.max(3, options.intensity * 0.22)}px`,
+    );
+    overlay.style.setProperty(
+      '--ace-spark-glow-size',
+      `${Math.max(4, options.intensity * 0.26)}px`,
+    );
+    overlay.style.setProperty(
+      '--ace-aura-opacity',
+      `${Math.min(1, Math.max(0.18, options.intensity / 100))}`,
+    );
+    overlay.style.setProperty('--ace-brightness', `${brightness}`);
+    overlay.style.setProperty('--ace-saturate', `${saturate}`);
+    overlay.style.setProperty('--ace-main-stroke', `${options.thickness}`);
+    overlay.style.setProperty(
+      '--ace-soft-stroke',
+      `${options.thickness + Math.max(3, options.intensity * 0.055)}`,
+    );
+    overlay.style.setProperty(
+      '--ace-spark-stroke',
+      `${Math.max(1, options.thickness * 0.52 + options.intensity * 0.008)}`,
+    );
+    overlay.style.setProperty(
+      '--ace-comet-main-stroke',
+      `${options.thickness * 0.9}`,
+    );
+    overlay.style.setProperty(
+      '--ace-comet-spark-stroke',
+      `${Math.max(1.2, options.thickness * 0.82)}`,
+    );
+    overlay.style.setProperty(
+      '--ace-corner-size',
+      `${Math.max(8, options.intensity * 0.16)}px`,
+    );
+    overlay.style.setProperty('--ace-draw-duration', `${0.95 * speedFactor}s`);
+    overlay.style.setProperty('--ace-fast-duration', `${0.75 * speedFactor}s`);
+    overlay.style.setProperty('--ace-live-duration', `${1.15 * speedFactor}s`);
+    overlay.style.setProperty(
+      '--ace-breathe-duration',
+      `${1.6 * speedFactor}s`,
+    );
+    overlay.style.setProperty('--ace-calm-duration', `${2.1 * speedFactor}s`);
+    overlay.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor}s`);
   }
 
   function isModifierActive(event) {
@@ -137,15 +167,15 @@
       return modifierIsDown;
     }
 
-    if (options.modifierKey === "Control") {
+    if (options.modifierKey === 'Control') {
       return event.ctrlKey;
     }
 
-    if (options.modifierKey === "Shift") {
+    if (options.modifierKey === 'Shift') {
       return event.shiftKey;
     }
 
-    if (options.modifierKey === "Alt") {
+    if (options.modifierKey === 'Alt') {
       return event.altKey;
     }
 
@@ -163,8 +193,8 @@
     return (
       rect.width >= MIN_SIZE &&
       rect.height >= MIN_SIZE &&
-      style.visibility !== "hidden" &&
-      style.display !== "none" &&
+      style.visibility !== 'hidden' &&
+      style.display !== 'none' &&
       Number(style.opacity) !== 0
     );
   }
@@ -173,7 +203,11 @@
     const element = start instanceof Element ? start : start?.parentElement;
     const button = element?.closest(BUTTON_SELECTOR);
 
-    if (!button || !document.documentElement.contains(button) || !isVisible(button)) {
+    if (
+      !button ||
+      !document.documentElement.contains(button) ||
+      !isVisible(button)
+    ) {
       return null;
     }
 
@@ -225,22 +259,24 @@
       top: rect.top - LIVE_MARGIN,
       width,
       height,
-      radius: borderRadiusFor(element)
+      radius: borderRadiusFor(element),
     };
   }
 
   function setOverlayGeometry(overlay, geometry, smooth = true) {
-    overlay.classList.toggle("is-smooth", smooth);
-    overlay.style.setProperty("--ace-width", `${geometry.width}px`);
-    overlay.style.setProperty("--ace-height", `${geometry.height}px`);
-    overlay.style.setProperty("--ace-radius", `${geometry.radius}px`);
+    overlay.classList.toggle('is-smooth', smooth);
+    overlay.style.setProperty('--ace-width', `${geometry.width}px`);
+    overlay.style.setProperty('--ace-height', `${geometry.height}px`);
+    overlay.style.setProperty('--ace-radius', `${geometry.radius}px`);
     overlay.style.transform = `translate3d(${geometry.left}px, ${geometry.top}px, 0)`;
-    overlay.querySelector("svg")?.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
+    overlay
+      .querySelector('svg')
+      ?.setAttribute('viewBox', `0 0 ${geometry.width} ${geometry.height}`);
 
-    overlay.querySelectorAll("rect").forEach((rectElement) => {
-      rectElement.setAttribute("width", `${Math.max(1, geometry.width - 6)}`);
-      rectElement.setAttribute("height", `${Math.max(1, geometry.height - 6)}`);
-      rectElement.setAttribute("rx", `${geometry.radius}`);
+    overlay.querySelectorAll('rect').forEach((rectElement) => {
+      rectElement.setAttribute('width', `${Math.max(1, geometry.width)}`);
+      rectElement.setAttribute('height', `${Math.max(1, geometry.height)}`);
+      rectElement.setAttribute('rx', `${geometry.radius}`);
     });
   }
 
@@ -258,7 +294,11 @@
         return;
       }
 
-      if (!effect.element || !document.documentElement.contains(effect.element) || !isVisible(effect.element)) {
+      if (
+        !effect.element ||
+        !document.documentElement.contains(effect.element) ||
+        !isVisible(effect.element)
+      ) {
         removeTrackedEffect(overlay);
         return;
       }
@@ -287,14 +327,14 @@
   }
 
   function createEffect(element, optionsForEffect = {}) {
-    const overlay = document.createElement("div");
+    const overlay = document.createElement('div');
     const geometry = geometryFor(element);
 
     overlay.innerHTML = `
       <svg viewBox="0 0 ${geometry.width} ${geometry.height}" preserveAspectRatio="none" aria-hidden="true">
-        <rect class="ace-line ace-line-soft" x="3" y="3" width="${geometry.width - 6}" height="${geometry.height - 6}" rx="${geometry.radius}"/>
-        <rect class="ace-line ace-line-main" x="3" y="3" width="${geometry.width - 6}" height="${geometry.height - 6}" rx="${geometry.radius}"/>
-        <rect class="ace-line ace-line-spark" x="3" y="3" width="${geometry.width - 6}" height="${geometry.height - 6}" rx="${geometry.radius}"/>
+        <rect class="ace-line ace-line-soft" x="0" y="0" width="${geometry.width}" height="${geometry.height}" rx="${geometry.radius}"/>
+        <rect class="ace-line ace-line-main" x="0" y="0" width="${geometry.width}" height="${geometry.height}" rx="${geometry.radius}"/>
+        <rect class="ace-line ace-line-spark" x="0" y="0" width="${geometry.width}" height="${geometry.height}" rx="${geometry.radius}"/>
       </svg>
       <span class="ace-corner"></span>
     `;
@@ -329,9 +369,9 @@
       return;
     }
 
-    liveOverlay.classList.remove("is-live");
+    liveOverlay.classList.remove('is-live');
     liveOverlay.offsetWidth;
-    liveOverlay.classList.add("is-live");
+    liveOverlay.classList.add('is-live');
   }
 
   function stopLiveEffect({ completeOnce = false } = {}) {
@@ -343,19 +383,28 @@
     liveFrame = 0;
 
     if (overlayToRemove) {
-      if (completeOnce && overlayToRemove.classList.contains("is-once")) {
-        overlayToRemove.classList.remove("is-smooth");
-        trackEffect(overlayToRemove, overlayToRemove.__aceTarget, fadeDurationMs() + 100);
+      if (completeOnce && overlayToRemove.classList.contains('is-once')) {
+        overlayToRemove.classList.remove('is-smooth');
+        trackEffect(
+          overlayToRemove,
+          overlayToRemove.__aceTarget,
+          fadeDurationMs() + 100,
+        );
         return;
       }
 
-      overlayToRemove.classList.add("is-leaving");
+      overlayToRemove.classList.add('is-leaving');
       window.setTimeout(() => overlayToRemove.remove(), 180);
     }
   }
 
   function syncLiveOverlay() {
-    if (!modifierIsDown || !liveOverlay || !liveTarget || !isUsableHoverTarget(liveTarget)) {
+    if (
+      !modifierIsDown ||
+      !liveOverlay ||
+      !liveTarget ||
+      !isUsableHoverTarget(liveTarget)
+    ) {
       stopLiveEffect({ completeOnce: !options.hoverLoop });
       return;
     }
@@ -389,11 +438,14 @@
     if (target !== liveTarget) {
       liveTarget = target;
       liveOverlay.__aceTarget = target;
-      liveOverlay.classList.remove("is-resting");
-      liveOverlay.classList.add("is-switching");
+      liveOverlay.classList.remove('is-resting');
+      liveOverlay.classList.add('is-switching');
       setOverlayGeometry(liveOverlay, geometryFor(target), true);
       restartLiveAnimation();
-      window.setTimeout(() => liveOverlay?.classList.remove("is-switching"), 220);
+      window.setTimeout(
+        () => liveOverlay?.classList.remove('is-switching'),
+        220,
+      );
     }
   }
 
@@ -408,7 +460,7 @@
       return;
     }
 
-    const style = document.createElement("style");
+    const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
       .${OVERLAY_CLASS} {
@@ -495,8 +547,8 @@
 
       .${OVERLAY_CLASS} .ace-corner {
         position: absolute;
-        left: 3px;
-        top: 3px;
+        left: 0;
+        top: 0;
         width: var(--ace-corner-size);
         height: var(--ace-corner-size);
         border-radius: 50%;
@@ -752,7 +804,7 @@
   loadOptions();
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== "sync" || !changes.aceOptions) {
+    if (areaName !== 'sync' || !changes.aceOptions) {
       return;
     }
 
@@ -762,7 +814,7 @@
   });
 
   document.addEventListener(
-    "click",
+    'click',
     (event) => {
       const button = findButton(event.target);
 
@@ -770,11 +822,11 @@
         showClickEffect(button);
       }
     },
-    true
+    true,
   );
 
   document.addEventListener(
-    "mousemove",
+    'mousemove',
     (event) => {
       lastPointer = { x: event.clientX, y: event.clientY };
       modifierIsDown = isModifierActive(event);
@@ -785,40 +837,40 @@
         stopLiveEffect({ completeOnce: !options.hoverLoop });
       }
     },
-    true
+    true,
   );
 
   document.addEventListener(
-    "keydown",
+    'keydown',
     (event) => {
       if (eventMatchesModifier(event)) {
         modifierIsDown = true;
         scheduleLiveUpdate();
       }
     },
-    true
+    true,
   );
 
   document.addEventListener(
-    "keyup",
+    'keyup',
     (event) => {
       if (eventMatchesModifier(event)) {
         stopLiveEffect({ completeOnce: !options.hoverLoop });
       }
     },
-    true
+    true,
   );
 
-  window.addEventListener("blur", stopLiveEffect);
+  window.addEventListener('blur', stopLiveEffect);
   window.addEventListener(
-    "scroll",
+    'scroll',
     () => {
       scheduleLiveUpdate();
       scheduleTrackedEffectsUpdate();
     },
-    true
+    true,
   );
-  window.addEventListener("resize", () => {
+  window.addEventListener('resize', () => {
     scheduleLiveUpdate();
     scheduleTrackedEffectsUpdate();
   });
