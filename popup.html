@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Amazing Click Effect</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body data-theme="blue">
+    <main class="panel">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h1>Amazing Click Effect</h1>
+          <p>Neon element borders</p>
+        </div>
+      </div>
+
+      <button id="preview-effect" class="preview-button" type="button">
+        <span class="button-glow" aria-hidden="true"></span>
+        Preview Effect
+      </button>
+
+      <section class="controls" aria-label="Effect settings">
+        <label class="field">
+          <span>Hover Key</span>
+          <select id="modifier-key">
+            <option value="Control">Control</option>
+            <option value="Shift">Shift</option>
+            <option value="Alt">Alt</option>
+            <option value="Meta">Command</option>
+          </select>
+        </label>
+
+        <fieldset class="field">
+          <legend>Color</legend>
+          <div class="swatches" id="color-theme">
+            <button class="swatch is-blue" type="button" data-value="blue" aria-label="Electric blue"></button>
+            <button class="swatch is-cyan" type="button" data-value="cyan" aria-label="Aqua cyan"></button>
+            <button class="swatch is-violet" type="button" data-value="violet" aria-label="Violet"></button>
+            <button class="swatch is-emerald" type="button" data-value="emerald" aria-label="Emerald"></button>
+            <button class="swatch is-rose" type="button" data-value="rose" aria-label="Rose"></button>
+            <button class="swatch is-gold" type="button" data-value="gold" aria-label="Gold"></button>
+          </div>
+        </fieldset>
+
+        <label class="field">
+          <span>Motion</span>
+          <select id="motion-style">
+            <option value="trace">Trace</option>
+            <option value="comet">Comet</option>
+            <option value="breathe">Breathe</option>
+            <option value="calm">Calm</option>
+          </select>
+        </label>
+
+        <div class="toggle-grid">
+          <label class="toggle-row">
+            <span>
+              <strong>Loop Hover</strong>
+              <small>Repeat while the key is held</small>
+            </span>
+            <input id="hover-loop" type="checkbox">
+          </label>
+
+          <label class="toggle-row">
+            <span>
+              <strong>Click Effect</strong>
+              <small>Show the effect on button clicks</small>
+            </span>
+            <input id="click-enabled" type="checkbox">
+          </label>
+        </div>
+
+        <div class="slider-grid">
+          <label class="field range-field">
+            <span>Shine <output id="intensity-value"></output></span>
+            <input id="intensity" type="range" min="30" max="140" step="5">
+          </label>
+
+          <label class="field range-field">
+            <span>Contrast <output id="contrast-value"></output></span>
+            <input id="contrast" type="range" min="40" max="140" step="5">
+          </label>
+
+          <label class="field range-field">
+            <span>Thickness <output id="thickness-value"></output></span>
+            <input id="thickness" type="range" min="1" max="6" step="0.5">
+          </label>
+
+          <label class="field range-field">
+            <span>Speed <output id="speed-value"></output></span>
+            <input id="speed" type="range" min="35" max="130" step="5">
+          </label>
+
+          <button id="reset-visuals" class="reset-button" type="button">Reset Visuals</button>
+        </div>
+      </section>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
