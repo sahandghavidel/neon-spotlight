@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Amazing Click Effect",
-  "description": "Adds customizable neon border animations to clicked buttons and hovered page elements.",
-  "version": "1.9.0",
+  "description": "Adds customizable neon border animations to clicked buttons and key-highlighted page elements.",
+  "version": "2.1.0",
   "action": {
     "default_title": "Amazing Click Effect",
     "default_popup": "popup.html"

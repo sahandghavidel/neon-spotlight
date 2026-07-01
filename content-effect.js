@@ -1,5 +1,6 @@
 (() => {
   const OVERLAY_CLASS = 'ace-neon-element-border';
+  const DIM_CLASS = 'ace-neon-element-dim';
   const STYLE_ID = 'ace-neon-element-border-styles';
   const BUTTON_SELECTOR = [
     'button',
@@ -14,6 +15,8 @@
     colorTheme: 'blue',
     clickEnabled: true,
     randomColor: false,
+    dimBackground: false,
+    dimStrength: 45,
     intensity: 85,
     contrast: 80,
     thickness: 3,
@@ -65,12 +68,7 @@
   const THEME_KEYS = Object.keys(THEMES);
   let options = { ...DEFAULT_OPTIONS };
   let lastRandomTheme = null;
-  let modifierIsDown = false;
-  let hoverOverlay = null;
-  let hoverTarget = null;
   let lastPointer = { x: 0, y: 0 };
-  let hoverFrame = 0;
-  let pendingPointerFrame = 0;
   let trackedFrame = 0;
   const trackedEffects = new Map();
 
@@ -88,7 +86,6 @@
   async function loadOptions() {
     const result = await storageGet({ aceOptions: DEFAULT_OPTIONS });
     options = { ...DEFAULT_OPTIONS, ...result.aceOptions };
-    applyOptions(hoverOverlay);
   }
 
   function applyOptions(overlay, colorTheme = options.colorTheme) {
@@ -138,6 +135,16 @@
     );
     overlay.style.setProperty('--ace-draw-duration', `${0.95 * speedFactor}s`);
     overlay.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor}s`);
+    applyDimOptions(overlay.aceDimLayer);
+  }
+
+  function applyDimOptions(dimLayer) {
+    if (!dimLayer) {
+      return;
+    }
+
+    const strength = Math.max(10, Math.min(80, Number(options.dimStrength) || 45));
+    dimLayer.style.setProperty('--ace-dim-opacity', `${strength / 100}`);
   }
 
   function chooseEffectTheme() {
@@ -151,26 +158,6 @@
       choices[Math.floor(Math.random() * choices.length)] || options.colorTheme;
     lastRandomTheme = theme;
     return theme;
-  }
-
-  function isModifierActive(event) {
-    if (!event) {
-      return modifierIsDown;
-    }
-
-    if (options.modifierKey === 'Control') {
-      return event.ctrlKey;
-    }
-
-    if (options.modifierKey === 'Shift') {
-      return event.shiftKey;
-    }
-
-    if (options.modifierKey === 'Alt') {
-      return event.altKey;
-    }
-
-    return event.metaKey;
   }
 
   function eventMatchesModifier(event) {
@@ -205,13 +192,14 @@
     return button;
   }
 
-  function isUsableHoverTarget(element) {
+  function isUsableTarget(element) {
     if (
       !element ||
       !(element instanceof Element) ||
       element === document.documentElement ||
       element === document.body ||
-      element.closest?.(`.${OVERLAY_CLASS}`)
+      element.closest?.(`.${OVERLAY_CLASS}`) ||
+      element.closest?.(`.${DIM_CLASS}`)
     ) {
       return false;
     }
@@ -224,10 +212,10 @@
     return isVisible(element) && !coversScreen;
   }
 
-  function findHoverElement(x, y) {
+  function findPointedElement(x, y) {
     let element = document.elementFromPoint(x, y);
 
-    while (element && !isUsableHoverTarget(element)) {
+    while (element && !isUsableTarget(element)) {
       element = element.parentElement;
     }
 
@@ -274,11 +262,75 @@
       rectElement.setAttribute('height', `${Math.max(1, geometry.height)}`);
       rectElement.setAttribute('rx', `${geometry.radius}`);
     });
+
+    setDimGeometry(overlay.aceDimLayer, geometry, smooth);
+  }
+
+  function roundedRectPath(geometry) {
+    const radius = Math.min(geometry.radius, geometry.width / 2, geometry.height / 2);
+    const left = geometry.left;
+    const top = geometry.top;
+    const right = geometry.left + geometry.width;
+    const bottom = geometry.top + geometry.height;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    return [
+      `M0 0H${viewportWidth}V${viewportHeight}H0Z`,
+      `M${left + radius} ${top}`,
+      `H${right - radius}`,
+      `Q${right} ${top} ${right} ${top + radius}`,
+      `V${bottom - radius}`,
+      `Q${right} ${bottom} ${right - radius} ${bottom}`,
+      `H${left + radius}`,
+      `Q${left} ${bottom} ${left} ${bottom - radius}`,
+      `V${top + radius}`,
+      `Q${left} ${top} ${left + radius} ${top}`,
+      'Z',
+    ].join(' ');
+  }
+
+  function setDimGeometry(dimLayer, geometry, smooth = true) {
+    if (!dimLayer) {
+      return;
+    }
+
+    dimLayer.classList.toggle('is-smooth', smooth);
+    dimLayer.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
+    dimLayer.querySelector('path')?.setAttribute('d', roundedRectPath(geometry));
+  }
+
+  function createDimLayer(geometry) {
+    if (!options.dimBackground) {
+      return null;
+    }
+
+    const dimLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const dimPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+    dimLayer.classList.add(DIM_CLASS);
+    dimLayer.setAttribute('aria-hidden', 'true');
+    dimPath.setAttribute('fill-rule', 'evenodd');
+    dimLayer.append(dimPath);
+    applyDimOptions(dimLayer);
+    setDimGeometry(dimLayer, geometry, false);
+
+    return dimLayer;
+  }
+
+  function removeDimLayer(dimLayer) {
+    if (!dimLayer || !document.documentElement.contains(dimLayer)) {
+      return;
+    }
+
+    dimLayer.classList.add('is-removing');
+    window.setTimeout(() => dimLayer.remove(), 220);
   }
 
   function removeTrackedEffect(overlay) {
     const effect = trackedEffects.get(overlay);
     trackedEffects.delete(overlay);
+    removeDimLayer(overlay.aceDimLayer);
     overlay.remove();
     effect?.onRemove?.();
   }
@@ -341,9 +393,13 @@
     `;
 
     overlay.className = OVERLAY_CLASS;
+    overlay.aceDimLayer = createDimLayer(geometry);
     overlay.dataset.aceTheme = chooseEffectTheme();
     applyOptions(overlay, overlay.dataset.aceTheme);
     setOverlayGeometry(overlay, geometry, false);
+    if (overlay.aceDimLayer) {
+      document.documentElement.append(overlay.aceDimLayer);
+    }
     document.documentElement.append(overlay);
 
     trackEffect(overlay, element, fadeDurationMs() + 100, onRemove);
@@ -359,72 +415,11 @@
     createEffect(button);
   }
 
-  function stopHoverEffect() {
-    modifierIsDown = false;
-    hoverTarget = null;
-    const hadHoverOverlay = Boolean(hoverOverlay);
-    hoverOverlay = null;
-    window.cancelAnimationFrame(hoverFrame);
-    hoverFrame = 0;
+  function showKeyEffect() {
+    const target = findPointedElement(lastPointer.x, lastPointer.y);
 
-    if (hadHoverOverlay) {
-      scheduleTrackedEffectsUpdate();
-    }
-  }
-
-  function syncHoverOverlay() {
-    if (
-      !modifierIsDown ||
-      !hoverOverlay ||
-      !hoverTarget ||
-      !isUsableHoverTarget(hoverTarget)
-    ) {
-      stopHoverEffect();
-      return;
-    }
-
-    setOverlayGeometry(hoverOverlay, geometryFor(hoverTarget), true);
-    hoverFrame = window.requestAnimationFrame(syncHoverOverlay);
-  }
-
-  function updateHoverEffect() {
-    pendingPointerFrame = 0;
-
-    if (!modifierIsDown) {
-      return;
-    }
-
-    const target = findHoverElement(lastPointer.x, lastPointer.y);
-
-    if (!target) {
-      stopHoverEffect();
-      return;
-    }
-
-    if (!hoverOverlay) {
-      hoverTarget = target;
-      const overlay = createEffect(target, () => {
-        if (hoverOverlay === overlay) {
-          hoverOverlay = null;
-          hoverTarget = null;
-          window.cancelAnimationFrame(hoverFrame);
-          hoverFrame = 0;
-        }
-      });
-      hoverOverlay = overlay;
-      hoverFrame = window.requestAnimationFrame(syncHoverOverlay);
-      return;
-    }
-
-    if (target !== hoverTarget) {
-      hoverTarget = target;
-      setOverlayGeometry(hoverOverlay, geometryFor(target), true);
-    }
-  }
-
-  function scheduleHoverUpdate() {
-    if (!pendingPointerFrame) {
-      pendingPointerFrame = window.requestAnimationFrame(updateHoverEffect);
+    if (target) {
+      createEffect(target);
     }
   }
 
@@ -452,6 +447,33 @@
         transform-origin: 0 0;
         contain: layout style paint;
         will-change: transform, width, height, opacity;
+      }
+
+      .${DIM_CLASS} {
+        all: initial;
+        box-sizing: border-box;
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 2147483646;
+        pointer-events: none;
+        opacity: 1;
+        contain: layout style paint;
+        will-change: opacity;
+      }
+
+      .${DIM_CLASS}.is-smooth path {
+        transition: d 150ms cubic-bezier(0.2, 0.9, 0.2, 1);
+      }
+
+      .${DIM_CLASS}.is-removing {
+        opacity: 0;
+        transition: opacity 220ms ease-out;
+      }
+
+      .${DIM_CLASS} path {
+        fill: rgba(0, 0, 0, var(--ace-dim-opacity, 0.45));
       }
 
       .${OVERLAY_CLASS}.is-smooth {
@@ -571,7 +593,9 @@
 
       @media (prefers-reduced-motion: reduce) {
         .${OVERLAY_CLASS},
-        .${OVERLAY_CLASS}.is-smooth {
+        .${OVERLAY_CLASS}.is-smooth,
+        .${DIM_CLASS},
+        .${DIM_CLASS}.is-smooth path {
           transition-duration: 1ms;
           animation-duration: 1ms;
         }
@@ -595,8 +619,6 @@
     }
 
     options = { ...DEFAULT_OPTIONS, ...changes.aceOptions.newValue };
-    applyOptions(hoverOverlay, hoverOverlay?.dataset.aceTheme);
-    stopHoverEffect();
   });
 
   document.addEventListener(
@@ -615,13 +637,6 @@
     'mousemove',
     (event) => {
       lastPointer = { x: event.clientX, y: event.clientY };
-      modifierIsDown = isModifierActive(event);
-
-      if (modifierIsDown) {
-        scheduleHoverUpdate();
-      } else if (hoverOverlay) {
-        stopHoverEffect();
-      }
     },
     true,
   );
@@ -629,35 +644,19 @@
   document.addEventListener(
     'keydown',
     (event) => {
-      if (eventMatchesModifier(event)) {
-        modifierIsDown = true;
-        scheduleHoverUpdate();
+      if (eventMatchesModifier(event) && !event.repeat) {
+        showKeyEffect();
       }
     },
     true,
   );
 
-  document.addEventListener(
-    'keyup',
-    (event) => {
-      if (eventMatchesModifier(event)) {
-        stopHoverEffect();
-      }
-    },
-    true,
-  );
-
-  window.addEventListener('blur', stopHoverEffect);
   window.addEventListener(
     'scroll',
     () => {
-      scheduleHoverUpdate();
       scheduleTrackedEffectsUpdate();
     },
     true,
   );
-  window.addEventListener('resize', () => {
-    scheduleHoverUpdate();
-    scheduleTrackedEffectsUpdate();
-  });
+  window.addEventListener('resize', scheduleTrackedEffectsUpdate);
 })();

@@ -23,7 +23,7 @@
 
       <section class="controls" aria-label="Effect settings">
         <label class="field">
-          <span>Hover Key</span>
+          <span>Highlight Key</span>
           <select id="modifier-key">
             <option value="Control">Control</option>
             <option value="Shift">Shift</option>
@@ -60,6 +60,14 @@
             </span>
             <input id="random-color" type="checkbox">
           </label>
+
+          <label class="toggle-row">
+            <span>
+              <strong>Dim Background</strong>
+              <small>Darken everything outside the highlight</small>
+            </span>
+            <input id="dim-background" type="checkbox">
+          </label>
         </div>
 
         <div class="slider-grid">
@@ -81,6 +89,11 @@
           <label class="field range-field">
             <span>Border Gap <output id="border-gap-value"></output></span>
             <input id="border-gap" type="range" min="0" max="24" step="1">
+          </label>
+
+          <label class="field range-field">
+            <span>Dim Strength <output id="dim-strength-value"></output></span>
+            <input id="dim-strength" type="range" min="10" max="80" step="5">
           </label>
 
           <label class="field range-field">

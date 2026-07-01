@@ -3,6 +3,8 @@ const DEFAULT_OPTIONS = {
   colorTheme: "blue",
   clickEnabled: true,
   randomColor: false,
+  dimBackground: false,
+  dimStrength: 45,
   intensity: 85,
   contrast: 80,
   thickness: 3,
@@ -26,16 +28,19 @@ const statusText = document.querySelector("#status");
 const modifierSelect = document.querySelector("#modifier-key");
 const clickEnabledToggle = document.querySelector("#click-enabled");
 const randomColorToggle = document.querySelector("#random-color");
+const dimBackgroundToggle = document.querySelector("#dim-background");
 const intensityInput = document.querySelector("#intensity");
 const contrastInput = document.querySelector("#contrast");
 const thicknessInput = document.querySelector("#thickness");
 const borderGapInput = document.querySelector("#border-gap");
+const dimStrengthInput = document.querySelector("#dim-strength");
 const speedInput = document.querySelector("#speed");
 const resetVisualsButton = document.querySelector("#reset-visuals");
 const intensityValue = document.querySelector("#intensity-value");
 const contrastValue = document.querySelector("#contrast-value");
 const thicknessValue = document.querySelector("#thickness-value");
 const borderGapValue = document.querySelector("#border-gap-value");
+const dimStrengthValue = document.querySelector("#dim-strength-value");
 const speedValue = document.querySelector("#speed-value");
 const colorField = document.querySelector("#color-theme").closest(".field");
 const swatches = [...document.querySelectorAll("[data-value]")];
@@ -64,7 +69,8 @@ function storageSet(nextOptions) {
 function setStatus() {
   const keyName = options.modifierKey === "Meta" ? "Command" : options.modifierKey;
   const colorMode = options.randomColor ? "Random color is on." : `${THEME_LABELS[options.colorTheme]} is selected.`;
-  statusText.textContent = `Hold ${keyName} over any element. Click effect is ${options.clickEnabled ? "on" : "off"}. ${colorMode}`;
+  const dimMode = options.dimBackground ? `Dim is ${options.dimStrength}%.` : "Dim is off.";
+  statusText.textContent = `Press ${keyName} over any element. Click effect is ${options.clickEnabled ? "on" : "off"}. ${colorMode} ${dimMode}`;
 }
 
 function nextPreviewTheme() {
@@ -89,15 +95,18 @@ function paintControls() {
   modifierSelect.value = options.modifierKey;
   clickEnabledToggle.checked = options.clickEnabled;
   randomColorToggle.checked = options.randomColor;
+  dimBackgroundToggle.checked = options.dimBackground;
   intensityInput.value = options.intensity;
   contrastInput.value = options.contrast;
   thicknessInput.value = options.thickness;
   borderGapInput.value = options.borderGap;
+  dimStrengthInput.value = options.dimStrength;
   speedInput.value = options.speed;
   intensityValue.value = `${options.intensity}%`;
   contrastValue.value = `${options.contrast}%`;
   thicknessValue.value = `${options.thickness}px`;
   borderGapValue.value = `${options.borderGap}px`;
+  dimStrengthValue.value = `${options.dimStrength}%`;
   speedValue.value = `${options.speed}%`;
   colorField.classList.toggle("is-random", options.randomColor);
 
@@ -142,6 +151,10 @@ randomColorToggle.addEventListener("change", () => {
   saveOptions({ randomColor: randomColorToggle.checked });
 });
 
+dimBackgroundToggle.addEventListener("change", () => {
+  saveOptions({ dimBackground: dimBackgroundToggle.checked });
+});
+
 intensityInput.addEventListener("input", () => {
   saveOptions({ intensity: Number(intensityInput.value) });
 });
@@ -158,6 +171,10 @@ borderGapInput.addEventListener("input", () => {
   saveOptions({ borderGap: Number(borderGapInput.value) });
 });
 
+dimStrengthInput.addEventListener("input", () => {
+  saveOptions({ dimStrength: Number(dimStrengthInput.value) });
+});
+
 speedInput.addEventListener("input", () => {
   saveOptions({ speed: Number(speedInput.value) });
 });
@@ -168,6 +185,7 @@ resetVisualsButton.addEventListener("click", () => {
     contrast: DEFAULT_OPTIONS.contrast,
     thickness: DEFAULT_OPTIONS.thickness,
     borderGap: DEFAULT_OPTIONS.borderGap,
+    dimStrength: DEFAULT_OPTIONS.dimStrength,
     speed: DEFAULT_OPTIONS.speed
   });
 });
