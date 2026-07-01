@@ -20,7 +20,7 @@ body {
   --accent-deep: #136cff;
   --accent-soft: rgba(0, 209, 255, 0.34);
   width: 340px;
-  min-height: 560px;
+  min-height: 620px;
   margin: 0;
   color: #f6fbff;
   background:
@@ -390,6 +390,11 @@ input[type='range']::-moz-range-thumb {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   cursor: pointer;
+}
+
+.field.is-random .swatches {
+  opacity: 0.58;
+  filter: saturate(0.75);
 }
 
 .swatch.is-selected {

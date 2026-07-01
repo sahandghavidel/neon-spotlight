@@ -2,6 +2,7 @@ const DEFAULT_OPTIONS = {
   modifierKey: "Control",
   colorTheme: "blue",
   clickEnabled: true,
+  randomColor: false,
   intensity: 85,
   contrast: 80,
   thickness: 3,
@@ -18,11 +19,13 @@ const THEME_LABELS = {
   gold: "Gold"
 };
 
+const THEME_KEYS = Object.keys(THEME_LABELS);
 const hasChromeStorage = typeof chrome !== "undefined" && chrome.storage?.sync;
 const button = document.querySelector("#preview-effect");
 const statusText = document.querySelector("#status");
 const modifierSelect = document.querySelector("#modifier-key");
 const clickEnabledToggle = document.querySelector("#click-enabled");
+const randomColorToggle = document.querySelector("#random-color");
 const intensityInput = document.querySelector("#intensity");
 const contrastInput = document.querySelector("#contrast");
 const thicknessInput = document.querySelector("#thickness");
@@ -34,9 +37,11 @@ const contrastValue = document.querySelector("#contrast-value");
 const thicknessValue = document.querySelector("#thickness-value");
 const borderGapValue = document.querySelector("#border-gap-value");
 const speedValue = document.querySelector("#speed-value");
+const colorField = document.querySelector("#color-theme").closest(".field");
 const swatches = [...document.querySelectorAll("[data-value]")];
 
 let options = { ...DEFAULT_OPTIONS };
+let lastPreviewTheme = null;
 
 function storageGet() {
   if (hasChromeStorage) {
@@ -58,7 +63,20 @@ function storageSet(nextOptions) {
 
 function setStatus() {
   const keyName = options.modifierKey === "Meta" ? "Command" : options.modifierKey;
-  statusText.textContent = `Hold ${keyName} over any element. Click effect is ${options.clickEnabled ? "on" : "off"}.`;
+  const colorMode = options.randomColor ? "Random color is on." : `${THEME_LABELS[options.colorTheme]} is selected.`;
+  statusText.textContent = `Hold ${keyName} over any element. Click effect is ${options.clickEnabled ? "on" : "off"}. ${colorMode}`;
+}
+
+function nextPreviewTheme() {
+  if (!options.randomColor) {
+    lastPreviewTheme = options.colorTheme;
+    return options.colorTheme;
+  }
+
+  const choices = THEME_KEYS.filter((theme) => theme !== lastPreviewTheme);
+  const theme = choices[Math.floor(Math.random() * choices.length)] || options.colorTheme;
+  lastPreviewTheme = theme;
+  return theme;
 }
 
 function paintControls() {
@@ -70,6 +88,7 @@ function paintControls() {
   button.style.setProperty("--preview-gap", `${options.borderGap}px`);
   modifierSelect.value = options.modifierKey;
   clickEnabledToggle.checked = options.clickEnabled;
+  randomColorToggle.checked = options.randomColor;
   intensityInput.value = options.intensity;
   contrastInput.value = options.contrast;
   thicknessInput.value = options.thickness;
@@ -80,6 +99,7 @@ function paintControls() {
   thicknessValue.value = `${options.thickness}px`;
   borderGapValue.value = `${options.borderGap}px`;
   speedValue.value = `${options.speed}%`;
+  colorField.classList.toggle("is-random", options.randomColor);
 
   swatches.forEach((swatch) => {
     const selected = swatch.dataset.value === options.colorTheme;
@@ -103,6 +123,7 @@ async function loadOptions() {
 }
 
 button.addEventListener("click", () => {
+  document.body.dataset.theme = nextPreviewTheme();
   button.classList.remove("is-previewing");
   button.offsetWidth;
   button.classList.add("is-previewing");
@@ -115,6 +136,10 @@ modifierSelect.addEventListener("change", () => {
 
 clickEnabledToggle.addEventListener("change", () => {
   saveOptions({ clickEnabled: clickEnabledToggle.checked });
+});
+
+randomColorToggle.addEventListener("change", () => {
+  saveOptions({ randomColor: randomColorToggle.checked });
 });
 
 intensityInput.addEventListener("input", () => {

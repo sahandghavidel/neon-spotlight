@@ -13,6 +13,7 @@
     modifierKey: 'Control',
     colorTheme: 'blue',
     clickEnabled: true,
+    randomColor: false,
     intensity: 85,
     contrast: 80,
     thickness: 3,
@@ -61,7 +62,9 @@
 
   const MIN_SIZE = 8;
   const MAX_SCREEN_COVERAGE = 0.92;
+  const THEME_KEYS = Object.keys(THEMES);
   let options = { ...DEFAULT_OPTIONS };
+  let lastRandomTheme = null;
   let modifierIsDown = false;
   let hoverOverlay = null;
   let hoverTarget = null;
@@ -88,12 +91,12 @@
     applyOptions(hoverOverlay);
   }
 
-  function applyOptions(overlay) {
+  function applyOptions(overlay, colorTheme = options.colorTheme) {
     if (!overlay) {
       return;
     }
 
-    const theme = THEMES[options.colorTheme] || THEMES.blue;
+    const theme = THEMES[colorTheme] || THEMES.blue;
     const speedFactor = 75 / Math.max(35, options.speed);
     const brightness = Math.max(0.6, options.contrast / 80);
     const saturate = Math.max(0.7, options.contrast / 70);
@@ -135,6 +138,19 @@
     );
     overlay.style.setProperty('--ace-draw-duration', `${0.95 * speedFactor}s`);
     overlay.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor}s`);
+  }
+
+  function chooseEffectTheme() {
+    if (!options.randomColor) {
+      lastRandomTheme = options.colorTheme;
+      return options.colorTheme;
+    }
+
+    const choices = THEME_KEYS.filter((theme) => theme !== lastRandomTheme);
+    const theme =
+      choices[Math.floor(Math.random() * choices.length)] || options.colorTheme;
+    lastRandomTheme = theme;
+    return theme;
   }
 
   function isModifierActive(event) {
@@ -325,7 +341,8 @@
     `;
 
     overlay.className = OVERLAY_CLASS;
-    applyOptions(overlay);
+    overlay.dataset.aceTheme = chooseEffectTheme();
+    applyOptions(overlay, overlay.dataset.aceTheme);
     setOverlayGeometry(overlay, geometry, false);
     document.documentElement.append(overlay);
 
@@ -578,7 +595,7 @@
     }
 
     options = { ...DEFAULT_OPTIONS, ...changes.aceOptions.newValue };
-    applyOptions(hoverOverlay);
+    applyOptions(hoverOverlay, hoverOverlay?.dataset.aceTheme);
     stopHoverEffect();
   });
 
