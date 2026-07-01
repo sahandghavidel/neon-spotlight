@@ -65,6 +65,7 @@
 
   const MIN_SIZE = 8;
   const MAX_SCREEN_COVERAGE = 0.92;
+  const SPOTLIGHT_PADDING = 2;
   const THEME_KEYS = Object.keys(THEMES);
   let options = { ...DEFAULT_OPTIONS };
   let lastRandomTheme = null;
@@ -143,8 +144,10 @@
       return;
     }
 
+    const speedFactor = 75 / Math.max(35, options.speed);
     const strength = Math.max(10, Math.min(80, Number(options.dimStrength) || 45));
     dimLayer.style.setProperty('--ace-dim-opacity', `${strength / 100}`);
+    dimLayer.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor}s`);
   }
 
   function chooseEffectTheme() {
@@ -266,14 +269,39 @@
     setDimGeometry(overlay.aceDimLayer, geometry, smooth);
   }
 
+  function snapToDevicePixel(value) {
+    const ratio = window.devicePixelRatio || 1;
+    return Math.round(value * ratio) / ratio;
+  }
+
+  function spotlightGeometryFor(geometry) {
+    const left = geometry.left - SPOTLIGHT_PADDING;
+    const top = geometry.top - SPOTLIGHT_PADDING;
+    const width = geometry.width + SPOTLIGHT_PADDING * 2;
+    const height = geometry.height + SPOTLIGHT_PADDING * 2;
+
+    return {
+      left: snapToDevicePixel(left),
+      top: snapToDevicePixel(top),
+      width: snapToDevicePixel(width),
+      height: snapToDevicePixel(height),
+      radius: snapToDevicePixel(geometry.radius + SPOTLIGHT_PADDING),
+    };
+  }
+
   function roundedRectPath(geometry) {
-    const radius = Math.min(geometry.radius, geometry.width / 2, geometry.height / 2);
-    const left = geometry.left;
-    const top = geometry.top;
-    const right = geometry.left + geometry.width;
-    const bottom = geometry.top + geometry.height;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const spotlight = spotlightGeometryFor(geometry);
+    const radius = Math.min(
+      spotlight.radius,
+      spotlight.width / 2,
+      spotlight.height / 2,
+    );
+    const left = spotlight.left;
+    const top = spotlight.top;
+    const right = spotlight.left + spotlight.width;
+    const bottom = spotlight.top + spotlight.height;
+    const viewportWidth = snapToDevicePixel(window.innerWidth);
+    const viewportHeight = snapToDevicePixel(window.innerHeight);
 
     return [
       `M0 0H${viewportWidth}V${viewportHeight}H0Z`,
@@ -323,8 +351,7 @@
       return;
     }
 
-    dimLayer.classList.add('is-removing');
-    window.setTimeout(() => dimLayer.remove(), 220);
+    dimLayer.remove();
   }
 
   function removeTrackedEffect(overlay) {
@@ -461,15 +488,11 @@
         opacity: 1;
         contain: layout style paint;
         will-change: opacity;
+        animation: ace-button-fade var(--ace-fade-duration) ease-out forwards;
       }
 
       .${DIM_CLASS}.is-smooth path {
         transition: d 150ms cubic-bezier(0.2, 0.9, 0.2, 1);
-      }
-
-      .${DIM_CLASS}.is-removing {
-        opacity: 0;
-        transition: opacity 220ms ease-out;
       }
 
       .${DIM_CLASS} path {
