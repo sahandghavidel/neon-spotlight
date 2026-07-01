@@ -71,6 +71,7 @@
   let lastPointer = { x: 0, y: 0 };
   let trackedFrame = 0;
   let modifierKeyDown = false;
+  let activeKeyEffect = null;
   let heldKeyEffect = null;
   let pendingHoldEffect = null;
   const trackedEffects = new Map();
@@ -315,6 +316,9 @@
     window.clearTimeout(effect?.timeoutId);
     window.clearTimeout(effect?.holdTimeoutId);
     trackedEffects.delete(overlay);
+    if (activeKeyEffect === overlay) {
+      activeKeyEffect = null;
+    }
     if (heldKeyEffect === overlay) {
       heldKeyEffect = null;
     }
@@ -431,6 +435,7 @@
 
     trackEffect(overlay, element, fadeDurationMs() + 100, onRemove);
     if (settings.holdable) {
+      activeKeyEffect = overlay;
       pendingHoldEffect = overlay;
       const effect = trackedEffects.get(overlay);
       effect.holdTimeoutId = window.setTimeout(() => {
@@ -450,6 +455,10 @@
   }
 
   function showKeyEffect() {
+    if (activeKeyEffect) {
+      return;
+    }
+
     const target = findPointedElement(lastPointer.x, lastPointer.y);
 
     if (target) {
