@@ -70,11 +70,21 @@
   let lastRandomTheme = null;
   let lastPointer = { x: 0, y: 0 };
   let trackedFrame = 0;
+  let modifierKeyDown = false;
+  let heldKeyEffect = null;
+  let pendingHoldEffect = null;
   const trackedEffects = new Map();
 
+  function speedFactor() {
+    return 75 / Math.max(35, options.speed);
+  }
+
+  function drawDurationMs() {
+    return Math.ceil(950 * speedFactor());
+  }
+
   function fadeDurationMs() {
-    const speedFactor = 75 / Math.max(35, options.speed);
-    return Math.ceil(1500 * speedFactor);
+    return Math.ceil(1500 * speedFactor());
   }
 
   function storageGet(defaults) {
@@ -94,7 +104,6 @@
     }
 
     const theme = THEMES[colorTheme] || THEMES.blue;
-    const speedFactor = 75 / Math.max(35, options.speed);
     const brightness = Math.max(0.6, options.contrast / 80);
     const saturate = Math.max(0.7, options.contrast / 70);
 
@@ -133,8 +142,8 @@
       '--ace-corner-size',
       `${Math.max(8, options.intensity * 0.16)}px`,
     );
-    overlay.style.setProperty('--ace-draw-duration', `${0.95 * speedFactor}s`);
-    overlay.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor}s`);
+    overlay.style.setProperty('--ace-draw-duration', `${0.95 * speedFactor()}s`);
+    overlay.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor()}s`);
     applyDimOptions(overlay.aceDimLayer);
   }
 
@@ -143,10 +152,9 @@
       return;
     }
 
-    const speedFactor = 75 / Math.max(35, options.speed);
     const strength = Math.max(10, Math.min(80, Number(options.dimStrength) || 45));
     dimLayer.style.setProperty('--ace-dim-opacity', `${strength / 100}`);
-    dimLayer.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor}s`);
+    dimLayer.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor()}s`);
   }
 
   function chooseEffectTheme() {
@@ -304,7 +312,15 @@
 
   function removeTrackedEffect(overlay) {
     const effect = trackedEffects.get(overlay);
+    window.clearTimeout(effect?.timeoutId);
+    window.clearTimeout(effect?.holdTimeoutId);
     trackedEffects.delete(overlay);
+    if (heldKeyEffect === overlay) {
+      heldKeyEffect = null;
+    }
+    if (pendingHoldEffect === overlay) {
+      pendingHoldEffect = null;
+    }
     removeDimLayer(overlay.aceDimLayer);
     overlay.remove();
     effect?.onRemove?.();
@@ -340,21 +356,57 @@
 
   function trackEffect(overlay, element, durationMs, onRemove) {
     if (!element) {
-      window.setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         overlay.remove();
         onRemove?.();
       }, durationMs);
       return;
     }
 
-    trackedEffects.set(overlay, { element, onRemove });
-
-    window.setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
       removeTrackedEffect(overlay);
     }, durationMs);
+
+    trackedEffects.set(overlay, { element, onRemove, timeoutId });
   }
 
-  function createEffect(element, onRemove) {
+  function holdEffect(overlay) {
+    const effect = trackedEffects.get(overlay);
+
+    if (!effect || !modifierKeyDown || pendingHoldEffect !== overlay) {
+      return;
+    }
+
+    window.clearTimeout(effect.timeoutId);
+    effect.timeoutId = 0;
+    heldKeyEffect = overlay;
+    overlay.classList.add('is-held');
+    overlay.aceDimLayer?.classList.add('is-held');
+  }
+
+  function releaseHeldEffect() {
+    const overlay = heldKeyEffect;
+
+    if (!overlay) {
+      return;
+    }
+
+    const effect = trackedEffects.get(overlay);
+    heldKeyEffect = null;
+    pendingHoldEffect = null;
+
+    if (!effect) {
+      return;
+    }
+
+    overlay.classList.add('is-releasing');
+    overlay.aceDimLayer?.classList.add('is-releasing');
+    effect.timeoutId = window.setTimeout(() => {
+      removeTrackedEffect(overlay);
+    }, 240);
+  }
+
+  function createEffect(element, onRemove, settings = {}) {
     const overlay = document.createElement('div');
     const geometry = geometryFor(element);
 
@@ -378,6 +430,13 @@
     document.documentElement.append(overlay);
 
     trackEffect(overlay, element, fadeDurationMs() + 100, onRemove);
+    if (settings.holdable) {
+      pendingHoldEffect = overlay;
+      const effect = trackedEffects.get(overlay);
+      effect.holdTimeoutId = window.setTimeout(() => {
+        holdEffect(overlay);
+      }, drawDurationMs());
+    }
 
     return overlay;
   }
@@ -394,7 +453,7 @@
     const target = findPointedElement(lastPointer.x, lastPointer.y);
 
     if (target) {
-      createEffect(target);
+      createEffect(target, null, { holdable: true });
     }
   }
 
@@ -453,6 +512,17 @@
           border-radius 150ms cubic-bezier(0.2, 0.9, 0.2, 1);
       }
 
+      .${DIM_CLASS}.is-held {
+        opacity: 1;
+        animation: none;
+      }
+
+      .${DIM_CLASS}.is-releasing,
+      .${OVERLAY_CLASS}.is-releasing {
+        opacity: 0;
+        transition: opacity 220ms ease-out;
+      }
+
       .${OVERLAY_CLASS}.is-smooth {
         transition:
           transform 150ms cubic-bezier(0.2, 0.9, 0.2, 1),
@@ -488,6 +558,11 @@
         animation: ace-button-fade var(--ace-fade-duration) ease-out forwards;
       }
 
+      .${OVERLAY_CLASS}.is-held .ace-line-soft {
+        opacity: var(--ace-aura-opacity);
+        animation: none;
+      }
+
       .${OVERLAY_CLASS} .ace-line-main {
         stroke: var(--ace-main);
         stroke-width: var(--ace-main-stroke);
@@ -500,6 +575,12 @@
         animation: ace-button-draw var(--ace-draw-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-button-fade var(--ace-fade-duration) ease-out forwards;
       }
 
+      .${OVERLAY_CLASS}.is-held .ace-line-main {
+        opacity: 1;
+        stroke-dashoffset: 0;
+        animation: none;
+      }
+
       .${OVERLAY_CLASS} .ace-line-spark {
         stroke: var(--ace-bright);
         stroke-width: var(--ace-spark-stroke);
@@ -510,6 +591,12 @@
           saturate(var(--ace-saturate))
           drop-shadow(0 0 var(--ace-spark-glow-size) var(--ace-bright));
         animation: ace-button-spark var(--ace-draw-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-button-fade var(--ace-fade-duration) ease-out forwards;
+      }
+
+      .${OVERLAY_CLASS}.is-held .ace-line-spark {
+        opacity: 1;
+        stroke-dashoffset: 0;
+        animation: none;
       }
 
       .${OVERLAY_CLASS} .ace-corner {
@@ -525,6 +612,12 @@
           0 0 24px 9px var(--ace-glow);
         transform: translate(-50%, -50%);
         animation: ace-button-dot var(--ace-fade-duration) ease-out forwards;
+      }
+
+      .${OVERLAY_CLASS}.is-held .ace-corner {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        animation: none;
       }
 
       @keyframes ace-button-draw {
@@ -622,11 +715,30 @@
     'keydown',
     (event) => {
       if (eventMatchesModifier(event) && !event.repeat) {
+        modifierKeyDown = true;
         showKeyEffect();
       }
     },
     true,
   );
+
+  document.addEventListener(
+    'keyup',
+    (event) => {
+      if (eventMatchesModifier(event)) {
+        modifierKeyDown = false;
+        pendingHoldEffect = null;
+        releaseHeldEffect();
+      }
+    },
+    true,
+  );
+
+  window.addEventListener('blur', () => {
+    modifierKeyDown = false;
+    pendingHoldEffect = null;
+    releaseHeldEffect();
+  });
 
   window.addEventListener(
     'scroll',
