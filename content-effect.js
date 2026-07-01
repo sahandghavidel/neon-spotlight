@@ -65,7 +65,6 @@
 
   const MIN_SIZE = 8;
   const MAX_SCREEN_COVERAGE = 0.92;
-  const SPOTLIGHT_PADDING = 2;
   const THEME_KEYS = Object.keys(THEMES);
   let options = { ...DEFAULT_OPTIONS };
   let lastRandomTheme = null;
@@ -269,63 +268,16 @@
     setDimGeometry(overlay.aceDimLayer, geometry, smooth);
   }
 
-  function snapToDevicePixel(value) {
-    const ratio = window.devicePixelRatio || 1;
-    return Math.round(value * ratio) / ratio;
-  }
-
-  function spotlightGeometryFor(geometry) {
-    const left = geometry.left - SPOTLIGHT_PADDING;
-    const top = geometry.top - SPOTLIGHT_PADDING;
-    const width = geometry.width + SPOTLIGHT_PADDING * 2;
-    const height = geometry.height + SPOTLIGHT_PADDING * 2;
-
-    return {
-      left: snapToDevicePixel(left),
-      top: snapToDevicePixel(top),
-      width: snapToDevicePixel(width),
-      height: snapToDevicePixel(height),
-      radius: snapToDevicePixel(geometry.radius + SPOTLIGHT_PADDING),
-    };
-  }
-
-  function roundedRectPath(geometry) {
-    const spotlight = spotlightGeometryFor(geometry);
-    const radius = Math.min(
-      spotlight.radius,
-      spotlight.width / 2,
-      spotlight.height / 2,
-    );
-    const left = spotlight.left;
-    const top = spotlight.top;
-    const right = spotlight.left + spotlight.width;
-    const bottom = spotlight.top + spotlight.height;
-    const viewportWidth = snapToDevicePixel(window.innerWidth);
-    const viewportHeight = snapToDevicePixel(window.innerHeight);
-
-    return [
-      `M0 0H${viewportWidth}V${viewportHeight}H0Z`,
-      `M${left + radius} ${top}`,
-      `H${right - radius}`,
-      `Q${right} ${top} ${right} ${top + radius}`,
-      `V${bottom - radius}`,
-      `Q${right} ${bottom} ${right - radius} ${bottom}`,
-      `H${left + radius}`,
-      `Q${left} ${bottom} ${left} ${bottom - radius}`,
-      `V${top + radius}`,
-      `Q${left} ${top} ${left + radius} ${top}`,
-      'Z',
-    ].join(' ');
-  }
-
   function setDimGeometry(dimLayer, geometry, smooth = true) {
     if (!dimLayer) {
       return;
     }
 
     dimLayer.classList.toggle('is-smooth', smooth);
-    dimLayer.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
-    dimLayer.querySelector('path')?.setAttribute('d', roundedRectPath(geometry));
+    dimLayer.style.setProperty('--ace-dim-width', `${geometry.width}px`);
+    dimLayer.style.setProperty('--ace-dim-height', `${geometry.height}px`);
+    dimLayer.style.setProperty('--ace-dim-radius', `${geometry.radius}px`);
+    dimLayer.style.transform = `translate3d(${geometry.left}px, ${geometry.top}px, 0)`;
   }
 
   function createDimLayer(geometry) {
@@ -333,13 +285,9 @@
       return null;
     }
 
-    const dimLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const dimPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-
+    const dimLayer = document.createElement('div');
     dimLayer.classList.add(DIM_CLASS);
     dimLayer.setAttribute('aria-hidden', 'true');
-    dimPath.setAttribute('fill-rule', 'evenodd');
-    dimLayer.append(dimPath);
     applyDimOptions(dimLayer);
     setDimGeometry(dimLayer, geometry, false);
 
@@ -479,24 +427,30 @@
       .${DIM_CLASS} {
         all: initial;
         box-sizing: border-box;
+        display: block;
         position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100vh;
+        left: 0;
+        top: 0;
+        width: var(--ace-dim-width);
+        height: var(--ace-dim-height);
         z-index: 2147483646;
         pointer-events: none;
-        opacity: 1;
-        contain: layout style paint;
-        will-change: opacity;
+        border-radius: var(--ace-dim-radius);
+        box-shadow: 0 0 0 max(100vw, 100vh)
+          rgba(0, 0, 0, var(--ace-dim-opacity, 0.45));
+        transform-origin: 0 0;
+        overflow: visible;
+        contain: layout style;
+        will-change: transform, width, height, border-radius, opacity;
         animation: ace-button-fade var(--ace-fade-duration) ease-out forwards;
       }
 
-      .${DIM_CLASS}.is-smooth path {
-        transition: d 150ms cubic-bezier(0.2, 0.9, 0.2, 1);
-      }
-
-      .${DIM_CLASS} path {
-        fill: rgba(0, 0, 0, var(--ace-dim-opacity, 0.45));
+      .${DIM_CLASS}.is-smooth {
+        transition:
+          transform 150ms cubic-bezier(0.2, 0.9, 0.2, 1),
+          width 150ms cubic-bezier(0.2, 0.9, 0.2, 1),
+          height 150ms cubic-bezier(0.2, 0.9, 0.2, 1),
+          border-radius 150ms cubic-bezier(0.2, 0.9, 0.2, 1);
       }
 
       .${OVERLAY_CLASS}.is-smooth {
@@ -618,7 +572,7 @@
         .${OVERLAY_CLASS},
         .${OVERLAY_CLASS}.is-smooth,
         .${DIM_CLASS},
-        .${DIM_CLASS}.is-smooth path {
+        .${DIM_CLASS}.is-smooth {
           transition-duration: 1ms;
           animation-duration: 1ms;
         }
