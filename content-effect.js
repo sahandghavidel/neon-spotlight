@@ -724,6 +724,7 @@
     'keydown',
     (event) => {
       if (eventMatchesModifier(event) && !event.repeat) {
+        event.preventDefault();
         modifierKeyDown = true;
         showKeyEffect();
       }

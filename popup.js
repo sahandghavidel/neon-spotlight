@@ -67,7 +67,7 @@ function storageSet(nextOptions) {
 }
 
 function setStatus() {
-  const keyName = options.modifierKey === "Meta" ? "Command" : options.modifierKey;
+  const keyName = options.modifierKey === "Meta" ? "Command" : options.modifierKey.replace("CapsLock", "Caps Lock");
   const colorMode = options.randomColor ? "Random color is on." : `${THEME_LABELS[options.colorTheme]} is selected.`;
   const dimMode = options.dimBackground ? `Dim is ${options.dimStrength}%.` : "Dim is off.";
   statusText.textContent = `Press ${keyName} over any element. Click effect is ${options.clickEnabled ? "on" : "off"}. ${colorMode} ${dimMode}`;
