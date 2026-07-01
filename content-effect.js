@@ -12,8 +12,6 @@
   const DEFAULT_OPTIONS = {
     modifierKey: 'Control',
     colorTheme: 'blue',
-    motionStyle: 'trace',
-    hoverLoop: true,
     clickEnabled: true,
     intensity: 85,
     contrast: 80,
@@ -25,42 +23,36 @@
     blue: {
       main: '#42e8ff',
       bright: '#f2ffff',
-      deep: '#136cff',
       soft: 'rgba(0, 209, 255, 0.32)',
       glow: 'rgba(0, 209, 255, 0.95)',
     },
     cyan: {
       main: '#48ffd5',
       bright: '#ecfff9',
-      deep: '#00a8d8',
       soft: 'rgba(72, 255, 213, 0.28)',
       glow: 'rgba(72, 255, 213, 0.9)',
     },
     violet: {
       main: '#b68cff',
       bright: '#fbf6ff',
-      deep: '#6f45ff',
       soft: 'rgba(182, 140, 255, 0.3)',
       glow: 'rgba(182, 140, 255, 0.9)',
     },
     emerald: {
       main: '#56ff94',
       bright: '#f1fff6',
-      deep: '#00a66a',
       soft: 'rgba(86, 255, 148, 0.27)',
       glow: 'rgba(86, 255, 148, 0.88)',
     },
     rose: {
       main: '#ff6fb1',
       bright: '#fff4fb',
-      deep: '#ff2f6f',
       soft: 'rgba(255, 111, 177, 0.28)',
       glow: 'rgba(255, 111, 177, 0.9)',
     },
     gold: {
       main: '#ffd45a',
       bright: '#fffbed',
-      deep: '#ff8d24',
       soft: 'rgba(255, 212, 90, 0.26)',
       glow: 'rgba(255, 212, 90, 0.88)',
     },
@@ -68,13 +60,13 @@
 
   const MIN_SIZE = 8;
   const MAX_SCREEN_COVERAGE = 0.92;
-  const LIVE_MARGIN = 5;
+  const EFFECT_MARGIN = 5;
   let options = { ...DEFAULT_OPTIONS };
   let modifierIsDown = false;
-  let liveOverlay = null;
-  let liveTarget = null;
+  let hoverOverlay = null;
+  let hoverTarget = null;
   let lastPointer = { x: 0, y: 0 };
-  let liveFrame = 0;
+  let hoverFrame = 0;
   let pendingPointerFrame = 0;
   let trackedFrame = 0;
   const trackedEffects = new Map();
@@ -93,7 +85,7 @@
   async function loadOptions() {
     const result = await storageGet({ aceOptions: DEFAULT_OPTIONS });
     options = { ...DEFAULT_OPTIONS, ...result.aceOptions };
-    applyOptions(liveOverlay);
+    applyOptions(hoverOverlay);
   }
 
   function applyOptions(overlay) {
@@ -106,10 +98,8 @@
     const brightness = Math.max(0.6, options.contrast / 80);
     const saturate = Math.max(0.7, options.contrast / 70);
 
-    overlay.dataset.motion = options.motionStyle;
     overlay.style.setProperty('--ace-main', theme.main);
     overlay.style.setProperty('--ace-bright', theme.bright);
-    overlay.style.setProperty('--ace-deep', theme.deep);
     overlay.style.setProperty('--ace-soft', theme.soft);
     overlay.style.setProperty('--ace-glow', theme.glow);
     overlay.style.setProperty(
@@ -140,25 +130,10 @@
       `${Math.max(1, options.thickness * 0.52 + options.intensity * 0.008)}`,
     );
     overlay.style.setProperty(
-      '--ace-comet-main-stroke',
-      `${options.thickness * 0.9}`,
-    );
-    overlay.style.setProperty(
-      '--ace-comet-spark-stroke',
-      `${Math.max(1.2, options.thickness * 0.82)}`,
-    );
-    overlay.style.setProperty(
       '--ace-corner-size',
       `${Math.max(8, options.intensity * 0.16)}px`,
     );
     overlay.style.setProperty('--ace-draw-duration', `${0.95 * speedFactor}s`);
-    overlay.style.setProperty('--ace-fast-duration', `${0.75 * speedFactor}s`);
-    overlay.style.setProperty('--ace-live-duration', `${1.15 * speedFactor}s`);
-    overlay.style.setProperty(
-      '--ace-breathe-duration',
-      `${1.6 * speedFactor}s`,
-    );
-    overlay.style.setProperty('--ace-calm-duration', `${2.1 * speedFactor}s`);
     overlay.style.setProperty('--ace-fade-duration', `${1.5 * speedFactor}s`);
   }
 
@@ -246,17 +221,17 @@
   function borderRadiusFor(element) {
     const style = window.getComputedStyle(element);
     const radius = Number.parseFloat(style.borderTopLeftRadius);
-    return Number.isFinite(radius) ? Math.min(radius + LIVE_MARGIN, 32) : 8;
+    return Number.isFinite(radius) ? Math.min(radius + EFFECT_MARGIN, 32) : 8;
   }
 
   function geometryFor(element) {
     const rect = element.getBoundingClientRect();
-    const width = rect.width + LIVE_MARGIN * 2;
-    const height = rect.height + LIVE_MARGIN * 2;
+    const width = rect.width + EFFECT_MARGIN * 2;
+    const height = rect.height + EFFECT_MARGIN * 2;
 
     return {
-      left: rect.left - LIVE_MARGIN,
-      top: rect.top - LIVE_MARGIN,
+      left: rect.left - EFFECT_MARGIN,
+      top: rect.top - EFFECT_MARGIN,
       width,
       height,
       radius: borderRadiusFor(element),
@@ -281,8 +256,10 @@
   }
 
   function removeTrackedEffect(overlay) {
+    const effect = trackedEffects.get(overlay);
     trackedEffects.delete(overlay);
     overlay.remove();
+    effect?.onRemove?.();
   }
 
   function updateTrackedEffects() {
@@ -313,20 +290,23 @@
     }
   }
 
-  function trackEffect(overlay, element, durationMs) {
+  function trackEffect(overlay, element, durationMs, onRemove) {
     if (!element) {
-      window.setTimeout(() => overlay.remove(), durationMs);
+      window.setTimeout(() => {
+        overlay.remove();
+        onRemove?.();
+      }, durationMs);
       return;
     }
 
-    trackedEffects.set(overlay, { element });
+    trackedEffects.set(overlay, { element, onRemove });
 
     window.setTimeout(() => {
       removeTrackedEffect(overlay);
     }, durationMs);
   }
 
-  function createEffect(element, optionsForEffect = {}) {
+  function createEffect(element, onRemove) {
     const overlay = document.createElement('div');
     const geometry = geometryFor(element);
 
@@ -339,19 +319,12 @@
       <span class="ace-corner"></span>
     `;
 
-    overlay.className =
-      optionsForEffect.live && options.hoverLoop
-        ? `${OVERLAY_CLASS} is-live`
-        : optionsForEffect.live
-          ? `${OVERLAY_CLASS} is-live is-once`
-          : OVERLAY_CLASS;
+    overlay.className = OVERLAY_CLASS;
     applyOptions(overlay);
     setOverlayGeometry(overlay, geometry, false);
     document.documentElement.append(overlay);
 
-    if (!optionsForEffect.live) {
-      trackEffect(overlay, element, fadeDurationMs() + 100);
-    }
+    trackEffect(overlay, element, fadeDurationMs() + 100, onRemove);
 
     return overlay;
   }
@@ -364,56 +337,35 @@
     createEffect(button);
   }
 
-  function restartLiveAnimation() {
-    if (!liveOverlay) {
-      return;
-    }
-
-    liveOverlay.classList.remove('is-live');
-    liveOverlay.offsetWidth;
-    liveOverlay.classList.add('is-live');
-  }
-
-  function stopLiveEffect({ completeOnce = false } = {}) {
+  function stopHoverEffect() {
     modifierIsDown = false;
-    liveTarget = null;
-    const overlayToRemove = liveOverlay;
-    liveOverlay = null;
-    window.cancelAnimationFrame(liveFrame);
-    liveFrame = 0;
+    hoverTarget = null;
+    const hadHoverOverlay = Boolean(hoverOverlay);
+    hoverOverlay = null;
+    window.cancelAnimationFrame(hoverFrame);
+    hoverFrame = 0;
 
-    if (overlayToRemove) {
-      if (completeOnce && overlayToRemove.classList.contains('is-once')) {
-        overlayToRemove.classList.remove('is-smooth');
-        trackEffect(
-          overlayToRemove,
-          overlayToRemove.__aceTarget,
-          fadeDurationMs() + 100,
-        );
-        return;
-      }
-
-      overlayToRemove.classList.add('is-leaving');
-      window.setTimeout(() => overlayToRemove.remove(), 180);
+    if (hadHoverOverlay) {
+      scheduleTrackedEffectsUpdate();
     }
   }
 
-  function syncLiveOverlay() {
+  function syncHoverOverlay() {
     if (
       !modifierIsDown ||
-      !liveOverlay ||
-      !liveTarget ||
-      !isUsableHoverTarget(liveTarget)
+      !hoverOverlay ||
+      !hoverTarget ||
+      !isUsableHoverTarget(hoverTarget)
     ) {
-      stopLiveEffect({ completeOnce: !options.hoverLoop });
+      stopHoverEffect();
       return;
     }
 
-    setOverlayGeometry(liveOverlay, geometryFor(liveTarget), true);
-    liveFrame = window.requestAnimationFrame(syncLiveOverlay);
+    setOverlayGeometry(hoverOverlay, geometryFor(hoverTarget), true);
+    hoverFrame = window.requestAnimationFrame(syncHoverOverlay);
   }
 
-  function updateLiveEffect() {
+  function updateHoverEffect() {
     pendingPointerFrame = 0;
 
     if (!modifierIsDown) {
@@ -423,35 +375,34 @@
     const target = findHoverElement(lastPointer.x, lastPointer.y);
 
     if (!target) {
-      stopLiveEffect();
+      stopHoverEffect();
       return;
     }
 
-    if (!liveOverlay) {
-      liveTarget = target;
-      liveOverlay = createEffect(target, { live: true });
-      liveOverlay.__aceTarget = target;
-      liveFrame = window.requestAnimationFrame(syncLiveOverlay);
+    if (!hoverOverlay) {
+      hoverTarget = target;
+      const overlay = createEffect(target, () => {
+        if (hoverOverlay === overlay) {
+          hoverOverlay = null;
+          hoverTarget = null;
+          window.cancelAnimationFrame(hoverFrame);
+          hoverFrame = 0;
+        }
+      });
+      hoverOverlay = overlay;
+      hoverFrame = window.requestAnimationFrame(syncHoverOverlay);
       return;
     }
 
-    if (target !== liveTarget) {
-      liveTarget = target;
-      liveOverlay.__aceTarget = target;
-      liveOverlay.classList.remove('is-resting');
-      liveOverlay.classList.add('is-switching');
-      setOverlayGeometry(liveOverlay, geometryFor(target), true);
-      restartLiveAnimation();
-      window.setTimeout(
-        () => liveOverlay?.classList.remove('is-switching'),
-        220,
-      );
+    if (target !== hoverTarget) {
+      hoverTarget = target;
+      setOverlayGeometry(hoverOverlay, geometryFor(target), true);
     }
   }
 
-  function scheduleLiveUpdate() {
+  function scheduleHoverUpdate() {
     if (!pendingPointerFrame) {
-      pendingPointerFrame = window.requestAnimationFrame(updateLiveEffect);
+      pendingPointerFrame = window.requestAnimationFrame(updateHoverEffect);
     }
   }
 
@@ -487,11 +438,6 @@
           width 150ms cubic-bezier(0.2, 0.9, 0.2, 1),
           height 150ms cubic-bezier(0.2, 0.9, 0.2, 1),
           border-radius 150ms cubic-bezier(0.2, 0.9, 0.2, 1);
-      }
-
-      .${OVERLAY_CLASS}.is-leaving {
-        opacity: 0;
-        transition: opacity 160ms ease-out;
       }
 
       .${OVERLAY_CLASS} svg {
@@ -560,109 +506,6 @@
         animation: ace-button-dot var(--ace-fade-duration) ease-out forwards;
       }
 
-      .${OVERLAY_CLASS}.is-live {
-        animation: ace-live-presence var(--ace-live-duration) ease-in-out infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live .ace-line-soft {
-        animation: ace-live-glow var(--ace-live-duration) ease-in-out infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live .ace-line-main {
-        animation: ace-button-draw var(--ace-fast-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-live-glow var(--ace-live-duration) ease-in-out infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live .ace-line-spark {
-        animation: ace-button-spark var(--ace-fast-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-live-spark var(--ace-live-duration) linear infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live .ace-corner {
-        animation: ace-live-corner var(--ace-live-duration) ease-in-out infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once {
-        animation: none;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once .ace-line-soft {
-        animation: ace-button-fade var(--ace-fade-duration) ease-out forwards;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once .ace-line-main {
-        animation: ace-button-draw var(--ace-draw-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-button-fade var(--ace-fade-duration) ease-out forwards;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once .ace-line-spark {
-        animation: ace-button-spark var(--ace-draw-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-button-fade var(--ace-fade-duration) ease-out forwards;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once .ace-corner {
-        animation: ace-button-dot var(--ace-fade-duration) ease-out forwards;
-      }
-
-      .${OVERLAY_CLASS}[data-motion="comet"] .ace-line-main {
-        stroke-width: var(--ace-comet-main-stroke);
-      }
-
-      .${OVERLAY_CLASS}[data-motion="comet"] .ace-line-spark {
-        stroke-width: var(--ace-comet-spark-stroke);
-        stroke-dasharray: 20 80;
-      }
-
-      .${OVERLAY_CLASS}.is-live[data-motion="comet"] .ace-line-spark {
-        animation: ace-live-comet var(--ace-fast-duration) linear infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live[data-motion="breathe"] .ace-line-main,
-      .${OVERLAY_CLASS}.is-live[data-motion="breathe"] .ace-line-soft {
-        stroke-dashoffset: 0;
-        animation: ace-breathe-line var(--ace-breathe-duration) ease-in-out infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live[data-motion="breathe"] .ace-line-spark {
-        opacity: 0.78;
-        animation: ace-live-spark var(--ace-breathe-duration) linear infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live[data-motion="calm"] {
-        animation: none;
-      }
-
-      .${OVERLAY_CLASS}.is-live[data-motion="calm"] .ace-line-main,
-      .${OVERLAY_CLASS}.is-live[data-motion="calm"] .ace-line-soft {
-        stroke-dashoffset: 0;
-        animation: ace-calm-glow var(--ace-calm-duration) ease-in-out infinite;
-      }
-
-      .${OVERLAY_CLASS}.is-live[data-motion="calm"] .ace-line-spark,
-      .${OVERLAY_CLASS}.is-live[data-motion="calm"] .ace-corner {
-        display: none;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once[data-motion] {
-        animation: none;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once[data-motion] .ace-line-soft {
-        display: initial;
-        animation: ace-button-fade var(--ace-fade-duration) ease-out forwards;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once[data-motion] .ace-line-main {
-        stroke-dashoffset: 100;
-        animation: ace-button-draw var(--ace-draw-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-button-fade var(--ace-fade-duration) ease-out forwards;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once[data-motion] .ace-line-spark {
-        display: initial;
-        animation: ace-button-spark var(--ace-draw-duration) cubic-bezier(0.19, 1, 0.22, 1) forwards, ace-button-fade var(--ace-fade-duration) ease-out forwards;
-      }
-
-      .${OVERLAY_CLASS}.is-live.is-once[data-motion] .ace-corner {
-        display: initial;
-        animation: ace-button-dot var(--ace-fade-duration) ease-out forwards;
-      }
-
       @keyframes ace-button-draw {
         to {
           stroke-dashoffset: 0;
@@ -704,85 +547,6 @@
         }
       }
 
-      @keyframes ace-live-presence {
-        0%,
-        100% {
-          filter: brightness(1);
-        }
-
-        50% {
-          filter: brightness(1.2);
-        }
-      }
-
-      @keyframes ace-live-glow {
-        0%,
-        100% {
-          opacity: 0.76;
-        }
-
-        50% {
-          opacity: 1;
-        }
-      }
-
-      @keyframes ace-live-spark {
-        from {
-          stroke-dashoffset: 112;
-        }
-
-        to {
-          stroke-dashoffset: 0;
-        }
-      }
-
-      @keyframes ace-live-comet {
-        from {
-          stroke-dashoffset: 120;
-        }
-
-        to {
-          stroke-dashoffset: 0;
-        }
-      }
-
-      @keyframes ace-live-corner {
-        0%,
-        100% {
-          opacity: 0.76;
-          transform: translate(-50%, -50%) scale(0.82);
-        }
-
-        50% {
-          opacity: 1;
-          transform: translate(-50%, -50%) scale(1.08);
-        }
-      }
-
-      @keyframes ace-breathe-line {
-        0%,
-        100% {
-          opacity: 0.6;
-          stroke-width: 2.5;
-        }
-
-        50% {
-          opacity: 1;
-          stroke-width: 5;
-        }
-      }
-
-      @keyframes ace-calm-glow {
-        0%,
-        100% {
-          opacity: 0.72;
-        }
-
-        50% {
-          opacity: 0.95;
-        }
-      }
-
       @media (prefers-reduced-motion: reduce) {
         .${OVERLAY_CLASS},
         .${OVERLAY_CLASS}.is-smooth {
@@ -809,8 +573,8 @@
     }
 
     options = { ...DEFAULT_OPTIONS, ...changes.aceOptions.newValue };
-    applyOptions(liveOverlay);
-    stopLiveEffect();
+    applyOptions(hoverOverlay);
+    stopHoverEffect();
   });
 
   document.addEventListener(
@@ -832,9 +596,9 @@
       modifierIsDown = isModifierActive(event);
 
       if (modifierIsDown) {
-        scheduleLiveUpdate();
-      } else if (liveOverlay) {
-        stopLiveEffect({ completeOnce: !options.hoverLoop });
+        scheduleHoverUpdate();
+      } else if (hoverOverlay) {
+        stopHoverEffect();
       }
     },
     true,
@@ -845,7 +609,7 @@
     (event) => {
       if (eventMatchesModifier(event)) {
         modifierIsDown = true;
-        scheduleLiveUpdate();
+        scheduleHoverUpdate();
       }
     },
     true,
@@ -855,23 +619,23 @@
     'keyup',
     (event) => {
       if (eventMatchesModifier(event)) {
-        stopLiveEffect({ completeOnce: !options.hoverLoop });
+        stopHoverEffect();
       }
     },
     true,
   );
 
-  window.addEventListener('blur', stopLiveEffect);
+  window.addEventListener('blur', stopHoverEffect);
   window.addEventListener(
     'scroll',
     () => {
-      scheduleLiveUpdate();
+      scheduleHoverUpdate();
       scheduleTrackedEffectsUpdate();
     },
     true,
   );
   window.addEventListener('resize', () => {
-    scheduleLiveUpdate();
+    scheduleHoverUpdate();
     scheduleTrackedEffectsUpdate();
   });
 })();

@@ -1,8 +1,6 @@
 const DEFAULT_OPTIONS = {
   modifierKey: "Control",
   colorTheme: "blue",
-  motionStyle: "trace",
-  hoverLoop: true,
   clickEnabled: true,
   intensity: 85,
   contrast: 80,
@@ -23,8 +21,6 @@ const hasChromeStorage = typeof chrome !== "undefined" && chrome.storage?.sync;
 const button = document.querySelector("#preview-effect");
 const statusText = document.querySelector("#status");
 const modifierSelect = document.querySelector("#modifier-key");
-const motionSelect = document.querySelector("#motion-style");
-const hoverLoopToggle = document.querySelector("#hover-loop");
 const clickEnabledToggle = document.querySelector("#click-enabled");
 const intensityInput = document.querySelector("#intensity");
 const contrastInput = document.querySelector("#contrast");
@@ -59,20 +55,16 @@ function storageSet(nextOptions) {
 
 function setStatus() {
   const keyName = options.modifierKey === "Meta" ? "Command" : options.modifierKey;
-  const hoverMode = options.hoverLoop ? "looping" : "one-time";
-  statusText.textContent = `Hold ${keyName} for ${hoverMode} hover. Click effect is ${options.clickEnabled ? "on" : "off"}.`;
+  statusText.textContent = `Hold ${keyName} over any element. Click effect is ${options.clickEnabled ? "on" : "off"}.`;
 }
 
 function paintControls() {
   document.body.dataset.theme = options.colorTheme;
-  button.dataset.motion = options.motionStyle;
   button.style.setProperty("--preview-glow", `${Math.max(2, options.intensity * 0.24)}px`);
   button.style.setProperty("--preview-aura", `${Math.max(0.25, options.intensity / 100)}`);
   button.style.setProperty("--preview-brightness", `${Math.max(0.55, options.contrast / 80)}`);
   button.style.setProperty("--preview-thickness", `${options.thickness}px`);
   modifierSelect.value = options.modifierKey;
-  motionSelect.value = options.motionStyle;
-  hoverLoopToggle.checked = options.hoverLoop;
   clickEnabledToggle.checked = options.clickEnabled;
   intensityInput.value = options.intensity;
   contrastInput.value = options.contrast;
@@ -113,14 +105,6 @@ button.addEventListener("click", () => {
 
 modifierSelect.addEventListener("change", () => {
   saveOptions({ modifierKey: modifierSelect.value });
-});
-
-motionSelect.addEventListener("change", () => {
-  saveOptions({ motionStyle: motionSelect.value });
-});
-
-hoverLoopToggle.addEventListener("change", () => {
-  saveOptions({ hoverLoop: hoverLoopToggle.checked });
 });
 
 clickEnabledToggle.addEventListener("change", () => {

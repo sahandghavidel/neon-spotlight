@@ -20,7 +20,7 @@ body {
   --accent-deep: #136cff;
   --accent-soft: rgba(0, 209, 255, 0.34);
   width: 340px;
-  min-height: 600px;
+  min-height: 520px;
   margin: 0;
   color: #f6fbff;
   background:
@@ -166,18 +166,6 @@ select {
 
 .preview-button.is-previewing::after {
   animation: preview-border 1.35s ease-out;
-}
-
-.preview-button[data-motion='comet'].is-previewing::after {
-  animation-duration: 0.85s;
-}
-
-.preview-button[data-motion='breathe'].is-previewing::after {
-  animation: preview-breathe 1.4s ease-in-out;
-}
-
-.preview-button[data-motion='calm'].is-previewing::after {
-  animation: preview-calm 1.2s ease-out;
 }
 
 .preview-button:hover {
@@ -481,36 +469,5 @@ input[type='range']::-moz-range-thumb {
   100% {
     opacity: 0;
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0);
-  }
-}
-
-@keyframes preview-breathe {
-  0%,
-  100% {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-
-  20%,
-  72% {
-    opacity: 1;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0);
-    transform: scale(1);
-  }
-}
-
-@keyframes preview-calm {
-  0% {
-    opacity: 0;
-  }
-
-  18%,
-  70% {
-    opacity: 0.9;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0);
-  }
-
-  100% {
-    opacity: 0;
   }
 }
