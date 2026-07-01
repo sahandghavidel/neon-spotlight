@@ -5,6 +5,7 @@ const DEFAULT_OPTIONS = {
   intensity: 85,
   contrast: 80,
   thickness: 3,
+  borderGap: 5,
   speed: 75
 };
 
@@ -25,11 +26,13 @@ const clickEnabledToggle = document.querySelector("#click-enabled");
 const intensityInput = document.querySelector("#intensity");
 const contrastInput = document.querySelector("#contrast");
 const thicknessInput = document.querySelector("#thickness");
+const borderGapInput = document.querySelector("#border-gap");
 const speedInput = document.querySelector("#speed");
 const resetVisualsButton = document.querySelector("#reset-visuals");
 const intensityValue = document.querySelector("#intensity-value");
 const contrastValue = document.querySelector("#contrast-value");
 const thicknessValue = document.querySelector("#thickness-value");
+const borderGapValue = document.querySelector("#border-gap-value");
 const speedValue = document.querySelector("#speed-value");
 const swatches = [...document.querySelectorAll("[data-value]")];
 
@@ -64,15 +67,18 @@ function paintControls() {
   button.style.setProperty("--preview-aura", `${Math.max(0.25, options.intensity / 100)}`);
   button.style.setProperty("--preview-brightness", `${Math.max(0.55, options.contrast / 80)}`);
   button.style.setProperty("--preview-thickness", `${options.thickness}px`);
+  button.style.setProperty("--preview-gap", `${options.borderGap}px`);
   modifierSelect.value = options.modifierKey;
   clickEnabledToggle.checked = options.clickEnabled;
   intensityInput.value = options.intensity;
   contrastInput.value = options.contrast;
   thicknessInput.value = options.thickness;
+  borderGapInput.value = options.borderGap;
   speedInput.value = options.speed;
   intensityValue.value = `${options.intensity}%`;
   contrastValue.value = `${options.contrast}%`;
   thicknessValue.value = `${options.thickness}px`;
+  borderGapValue.value = `${options.borderGap}px`;
   speedValue.value = `${options.speed}%`;
 
   swatches.forEach((swatch) => {
@@ -123,6 +129,10 @@ thicknessInput.addEventListener("input", () => {
   saveOptions({ thickness: Number(thicknessInput.value) });
 });
 
+borderGapInput.addEventListener("input", () => {
+  saveOptions({ borderGap: Number(borderGapInput.value) });
+});
+
 speedInput.addEventListener("input", () => {
   saveOptions({ speed: Number(speedInput.value) });
 });
@@ -132,6 +142,7 @@ resetVisualsButton.addEventListener("click", () => {
     intensity: DEFAULT_OPTIONS.intensity,
     contrast: DEFAULT_OPTIONS.contrast,
     thickness: DEFAULT_OPTIONS.thickness,
+    borderGap: DEFAULT_OPTIONS.borderGap,
     speed: DEFAULT_OPTIONS.speed
   });
 });

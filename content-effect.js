@@ -16,6 +16,7 @@
     intensity: 85,
     contrast: 80,
     thickness: 3,
+    borderGap: 5,
     speed: 75,
   };
 
@@ -60,7 +61,6 @@
 
   const MIN_SIZE = 8;
   const MAX_SCREEN_COVERAGE = 0.92;
-  const EFFECT_MARGIN = 5;
   let options = { ...DEFAULT_OPTIONS };
   let modifierIsDown = false;
   let hoverOverlay = null;
@@ -221,17 +221,22 @@
   function borderRadiusFor(element) {
     const style = window.getComputedStyle(element);
     const radius = Number.parseFloat(style.borderTopLeftRadius);
-    return Number.isFinite(radius) ? Math.min(radius + EFFECT_MARGIN, 32) : 8;
+    return Number.isFinite(radius) ? Math.min(radius + effectGap(), 32) : 8;
+  }
+
+  function effectGap() {
+    return Math.max(0, Math.min(24, Number(options.borderGap) || 0));
   }
 
   function geometryFor(element) {
     const rect = element.getBoundingClientRect();
-    const width = rect.width + EFFECT_MARGIN * 2;
-    const height = rect.height + EFFECT_MARGIN * 2;
+    const gap = effectGap();
+    const width = rect.width + gap * 2;
+    const height = rect.height + gap * 2;
 
     return {
-      left: rect.left - EFFECT_MARGIN,
-      top: rect.top - EFFECT_MARGIN,
+      left: rect.left - gap,
+      top: rect.top - gap,
       width,
       height,
       radius: borderRadiusFor(element),
