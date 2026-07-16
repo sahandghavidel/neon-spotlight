@@ -1,6 +1,6 @@
 # Neon Spotlight
 
-![Neon Spotlight highlighting an element inside a browser](assets/neon-spotlight-hero.png)
+![Neon Spotlight highlighting webpage elements](assets/neon-spotlight-demo.gif)
 
 Highlight any element on any webpage with a customizable neon border. Neon Spotlight is a lightweight, open-source Chrome extension designed for screen recordings, tutorials, presentations, demos, and focused browsing.
 
